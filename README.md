@@ -1,0 +1,1 @@
+# gcalert2slack

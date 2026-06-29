@@ -1,0 +1,9 @@
+.git
+.github
+.cache
+.env
+.env.example
+coverage.*
+*.out
+*.test
+docs

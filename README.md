@@ -2,6 +2,26 @@
 
 Pub/Sub push 経由で Cloud Monitoring 通知を受け取るアプリケーションです。
 
+## コンテナイメージ
+
+`v0.0.0` のようなセマンティックバージョンの Git タグを push すると、GitHub Actions がコンテナイメージを build して GitHub Container Registry に push します。
+
+- イメージ名: `ghcr.io/tomozo6/gcpalert2slack`
+- 付与されるタグ: Git タグ名そのもの (`v0.0.0` など) と `latest`
+
+例:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+公開されたイメージは次のように pull できます。
+
+```bash
+docker pull ghcr.io/tomozo6/gcpalert2slack:v0.1.0
+```
+
 ## 環境変数
 
 - `PORT`: Cloud Run またはローカル実行時に待ち受ける HTTP ポート。デフォルトは `8080`

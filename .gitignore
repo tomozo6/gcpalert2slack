@@ -26,6 +26,11 @@ go.work.sum
 
 # env file
 .env
+.cache/
+
+# macOS
+.DS_Store
+._*
 
 # Editor/IDE
 # .idea/

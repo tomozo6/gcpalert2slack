@@ -37,6 +37,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to read request body", http.StatusBadRequest)
 		return
 	}
+	log.Printf("read request body success. body: %s", string(body))
 
 	item, err := notification.DecodePushRequest(body)
 	if err != nil {

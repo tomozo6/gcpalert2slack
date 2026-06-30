@@ -1,0 +1,67 @@
+{
+  "incident": {
+    "condition": {
+      "conditionThreshold": {
+        "aggregations": [
+          {
+            "alignmentPeriod": "300s",
+            "groupByFields": [
+              "resource.label.method"
+            ],
+            "perSeriesAligner": "ALIGN_PERCENTILE_95"
+          }
+        ],
+        "comparison": "COMPARISON_GT",
+        "duration": "300s",
+        "filter": "metric.type = \"serviceruntime.googleapis.com/api/request_latencies\"\nresource.type = \"consumed_api\"\n(resource.labels.method = \"example.api.v1.ApiService.SearchPlaces\" OR resource.labels.method = \"example.api.v1.ApiService.GetTripDetail\" OR resource.labels.method = \"example.api.v1.ApiService.GetTripDetailSeries\" OR resource.labels.method = \"example.api.v1.ApiService.ListTrips\" OR resource.labels.method = \"example.api.v1.ApiService.ListTripSeries\" OR resource.labels.method = \"example.api.v1.ApiService.GetUser\"\n)\n",
+        "thresholdValue": 0.75,
+        "trigger": {
+          "count": 1
+        }
+      },
+      "displayName": "重要 endpoint の応答が遅くなっています",
+      "name": "projects/your-gcp-project-id/alertPolicies/1234567890123456789/conditions/1234567890123456789"
+    },
+    "condition_name": "重要 endpoint の応答が遅くなっています",
+    "documentation": {
+      "content": "【概要】\n重要 endpoint の応答時間が継続して悪化しており、特定 API 操作のユーザ体験が低下している可能性があります。\n\n【対象】\n・サービス: example-grpc-esp-hash-an.a.run.app",
+      "mime_type": "text/markdown"
+    },
+    "ended_at": null,
+    "incident_id": "0.dummy_incident_id",
+    "metadata": {
+      "system_labels": {},
+      "user_labels": {}
+    },
+    "metric": {
+      "displayName": "Request latencies",
+      "labels": {},
+      "type": "serviceruntime.googleapis.com/api/request_latencies"
+    },
+    "observed_value": "0.931",
+    "policy_name": "重要 endpoint の応答が遅くなっています",
+    "resource": {
+      "labels": {
+        "credential_id": "apikey:AIzaSy_dummy_key_for_testing_only",
+        "location": "asia-northeast1",
+        "method": "example.api.v1.ApiService.GetTripDetail",
+        "project_id": "your-gcp-project-id",
+        "service": "example-grpc-esp-hash-an.a.run.app",
+        "version": "v1"
+      },
+      "type": "consumed_api"
+    },
+    "resource_id": "",
+    "resource_name": "your-gcp-project-id Consumed API labels {project_id=your-gcp-project-id, service=example-grpc-esp-hash-an.a.run.app, method=example.api.v1.ApiService.GetTripDetail, version=v1, location=asia-northeast1, credential_id=apikey:AIzaSy_dummy_key_for_testing_only}",
+    "resource_type_display_name": "Consumed API",
+    "scoping_project_id": "your-gcp-project-id",
+    "scoping_project_number": 123456789012,
+    "severity": "Warning",
+    "started_at": 1782799925,
+    "state": "open",
+    "summary": "Request latencies for your-gcp-project-id Consumed API labels {project_id=your-gcp-project-id, service=example-grpc-esp-hash-an.a.run.app, method=example.api.v1.ApiService.GetTripDetail, version=v1, location=asia-northeast1, credential_id=apikey:AIzaSy_dummy_key_for_testing_only} is above the threshold of 0.750 with a value of 0.931.",
+    "threshold_value": "0.75",
+    "url": "https://console.cloud.google.com/monitoring/alerting/alerts/0.dummy_incident_id?channelType=cloud-pubsub&project=your-gcp-project-id"
+  },
+  "version": "1.2"
+}

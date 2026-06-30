@@ -94,6 +94,6 @@ func TestHandlerMethodAndNotFound(t *testing.T) {
 }
 
 func validPushBody() string {
-	payload := `{"policy_name":"cpu high","state":"open","severity":"critical","url":"https://example.com","scoping_project_id":"demo","documentation":{"content":"hello"}}`
+	payload := `{"incident":{"policy_name":"cpu high","state":"open","severity":"critical","url":"https://example.com","scoping_project_id":"demo","documentation":{"content":"hello"}}}`
 	return `{"message":{"data":"` + base64.StdEncoding.EncodeToString([]byte(payload)) + `"}}`
 }

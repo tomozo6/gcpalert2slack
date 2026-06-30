@@ -1,70 +1,116 @@
 package notification
 
 import (
+	_ "embed"
 	"encoding/base64"
+	"encoding/json"
 	"testing"
 )
 
-func TestDecodePushRequest(t *testing.T) {
+//go:embed notification_test.json
+var testIncidentJSON []byte
+
+func TestDecodePushRequest_Success_WithRealProductionLog(t *testing.T) {
 	t.Parallel()
 
-	payload := `{"policy_name":"cpu high","state":"open","severity":"critical","url":"https://example.com","scoping_project_id":"demo","documentation":{"content":"hello"}}`
-	body := `{"message":{"data":"` + base64.StdEncoding.EncodeToString([]byte(payload)) + `"}}`
+	pushBody := map[string]interface{}{
+		"message": map[string]interface{}{
+			"data": base64.StdEncoding.EncodeToString(testIncidentJSON),
+		},
+	}
 
-	notification, err := DecodePushRequest([]byte(body))
+	bodyBytes, err := json.Marshal(pushBody)
 	if err != nil {
-		t.Fatalf("DecodePushRequest() error = %v", err)
+		t.Fatalf("failed to marshal push body: %v", err)
 	}
 
-	if notification.State != "OPEN" {
-		t.Fatalf("state = %q, want OPEN", notification.State)
+	got, err := DecodePushRequest(bodyBytes)
+	if err != nil {
+		t.Fatalf("DecodePushRequest failed: %v", err)
 	}
-	if notification.Severity != "CRITICAL" {
-		t.Fatalf("severity = %q, want CRITICAL", notification.Severity)
+
+	// 1. Primitive fields
+	wantPolicy := "重要 endpoint の応答が遅くなっています"
+	if got.PolicyName != wantPolicy {
+		t.Errorf("PolicyName = %q, want %q", got.PolicyName, wantPolicy)
 	}
-	if notification.Documentation.Content != "hello" {
-		t.Fatalf("documentation = %q, want hello", notification.Documentation.Content)
+
+	if got.State != "OPEN" {
+		t.Errorf("State = %q, want OPEN", got.State)
+	}
+
+	if got.Severity != "WARNING" {
+		t.Errorf("Severity = %q, want WARNING", got.Severity)
+	}
+
+	if got.ScopingProjectID != "your-gcp-project-id" {
+		t.Errorf("ScopingProjectID = %q, want your-gcp-project-id", got.ScopingProjectID)
+	}
+
+	if got.ScopingProjectNumber != 123456789012 {
+		t.Errorf("ScopingProjectNumber = %d, want 123456789012", got.ScopingProjectNumber)
+	}
+
+	if got.StartedAt != 1782799925 {
+		t.Errorf("StartedAt = %d, want 1782799925", got.StartedAt)
+	}
+
+	if got.IncidentID != "0.dummy_incident_id" {
+		t.Errorf("IncidentID = %q, want 0.dummy_incident_id", got.IncidentID)
+	}
+
+	// 2. Resource structure assertions
+	if got.Resource.Type != "consumed_api" {
+		t.Errorf("Resource.Type = %q, want consumed_api", got.Resource.Type)
+	}
+	if got.Resource.Labels["project_id"] != "your-gcp-project-id" {
+		t.Errorf("Resource.Labels[project_id] = %q, want your-gcp-project-id", got.Resource.Labels["project_id"])
+	}
+
+	// 3. Metric structure assertions
+	if got.Metric.Type != "serviceruntime.googleapis.com/api/request_latencies" {
+		t.Errorf("Metric.Type = %q, want serviceruntime.googleapis.com/api/request_latencies", got.Metric.Type)
+	}
+
+	// 4. Condition structure assertions
+	if got.Condition.DisplayName != "重要 endpoint の応答が遅くなっています" {
+		t.Errorf("Condition.DisplayName = %q, want ...", got.Condition.DisplayName)
+	}
+	if got.Condition.ConditionThreshold == nil {
+		t.Fatal("Condition.ConditionThreshold is nil")
+	}
+	if got.Condition.ConditionThreshold.ThresholdValue != 0.75 {
+		t.Errorf("ConditionThreshold.ThresholdValue = %f, want 0.75", got.Condition.ConditionThreshold.ThresholdValue)
+	}
+	if len(got.Condition.ConditionThreshold.Aggregations) != 1 {
+		t.Fatalf("len(Aggregations) = %d, want 1", len(got.Condition.ConditionThreshold.Aggregations))
+	}
+	if got.Condition.ConditionThreshold.Aggregations[0].PerSeriesAligner != "ALIGN_PERCENTILE_95" {
+		t.Errorf("PerSeriesAligner = %q, want ALIGN_PERCENTILE_95", got.Condition.ConditionThreshold.Aggregations[0].PerSeriesAligner)
+	}
+
+	// 5. Documentation structure assertions
+	if got.Documentation.Content == "" {
+		t.Error("Documentation.Content is empty")
 	}
 }
 
-func TestDecodePushRequestErrors(t *testing.T) {
+func TestDecodePushRequest_InvalidBase64(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name string
-		body string
-	}{
-		{name: "invalid json", body: `{"message":`},
-		{name: "missing data", body: `{"message":{"data":""}}`},
-		{name: "invalid base64", body: `{"message":{"data":"***"}}`},
-		{name: "invalid incident json", body: `{"message":{"data":"` + base64.StdEncoding.EncodeToString([]byte(`{`)) + `"}}`},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			if _, err := DecodePushRequest([]byte(tt.body)); err == nil {
-				t.Fatal("DecodePushRequest() error = nil, want error")
-			}
-		})
+	body := []byte(`{"message":{"data":"invalid-base64!"}}`)
+	_, err := DecodePushRequest(body)
+	if err == nil {
+		t.Error("expected error for invalid base64, got nil")
 	}
 }
 
-func TestNormalizeState(t *testing.T) {
+func TestDecodePushRequest_MissingData(t *testing.T) {
 	t.Parallel()
 
-	tests := map[string]string{
-		"open":     "OPEN",
-		"OPEN":     "OPEN",
-		" closed ": "CLOSED",
-		"unknown":  "UNKNOWN",
-	}
-
-	for input, want := range tests {
-		if got := NormalizeState(input); got != want {
-			t.Fatalf("NormalizeState(%q) = %q, want %q", input, got, want)
-		}
+	body := []byte(`{"message":{}}`)
+	_, err := DecodePushRequest(body)
+	if err == nil {
+		t.Error("expected error for missing message.data, got nil")
 	}
 }

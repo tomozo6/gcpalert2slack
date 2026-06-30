@@ -97,3 +97,14 @@ SLACK_LIVE_TEST=1 go test ./integration -run TestSlackLive_PostNotification -v
 - integration test 実行時は repo ルートの `.env` を自動で読む
 - Bot が投稿先チャンネルに参加していること
 - Bot Token に `chat:write` 権限があること
+
+
+## E2E的なテスト
+
+```bash
+go run cmd/gcpalert2slack/main.go
+curl -X POST -H "Content-Type: application/json" \
+  -d "{\"message\":{\"data\":\"$(cat internal/notification/notification_test.json | base64 | tr -d '\n')\"}}" \
+  http://localhost:8080/
+
+```

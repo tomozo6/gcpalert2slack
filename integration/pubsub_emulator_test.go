@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"reflect"
 	"testing"
 	"time"
 
@@ -143,7 +144,7 @@ func TestPubSubPushWithEmulator_OpenNotificationIsDeliveredAndNormalized(t *test
 	if got.status != http.StatusNoContent {
 		t.Fatalf("%s: status = %d, want %d", tc.name, got.status, http.StatusNoContent)
 	}
-	if got.decodedNotification != tc.want {
+	if !reflect.DeepEqual(got.decodedNotification, tc.want) {
 		t.Fatalf("%s: decodedNotification = %#v, want %#v", tc.name, got.decodedNotification, tc.want)
 	}
 }
@@ -203,7 +204,12 @@ func mustDecodeNotificationForTest(t *testing.T, body []byte) notification.Monit
 // marshalNotification は、testCase に書いた入力データを
 // Pub/Sub に publish できる JSON bytes に変換する関数。
 func marshalNotification(input notification.MonitoringNotification) ([]byte, error) {
-	return json.Marshal(input)
+	payload := struct {
+		Incident notification.MonitoringNotification `json:"incident"`
+	}{
+		Incident: input,
+	}
+	return json.Marshal(payload)
 }
 
 type stubSender struct{}
